@@ -1,0 +1,1 @@
+#AptekaMos Parser v1.0
