@@ -43,7 +43,7 @@ def _get_page_html(url: str,
 
 
 def save_html(html: str):
-    with open('response.html', 'w') as f:
+    with open('output/response.html', 'w') as f:
         f.write(html)
 
 
