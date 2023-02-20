@@ -11,3 +11,8 @@ create table prices(
     store_name varchar(255),
     price float
 );
+
+create table proxies(
+    id integer primary key,
+    proxy_url varchar(255)
+)

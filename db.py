@@ -39,6 +39,11 @@ def delete(table: str, row_id: int) -> None:
     conn.commit()
 
 
+def clear_table(table: str) -> None:
+    cursor.execute(f"delete from {table}")
+    conn.commit()
+
+
 def get_cursor():
     return cursor
 
