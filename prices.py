@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from sess import sess
 from config import URL
 
-from db import fetchall, insert
+from model import Model
 
 
 def prepare_url_with_prices(raw_url: str) -> str:
@@ -30,6 +30,7 @@ def get_price_info(data: Dict) -> List:
 
 def save_prices_to_db(data: Dict) -> None:
     prices = get_price_info(data)
-    insert('prices', ['drug_id', 'drug_name', 'store_name', 'price'], prices)
+    model = Model()
+    model.insert('prices', ['drug_id', 'drug_name', 'store_name', 'price'], prices)
 
 

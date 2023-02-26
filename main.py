@@ -1,16 +1,15 @@
-# This is a sample Python script.
+from presenter import Presenter
+from view import MosAptekaGui
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+from model import Model
 
 
-# Press the green button in the gutter to run the script.
+def main():
+    model = Model()
+    view = MosAptekaGui()
+    presenter = Presenter(model, view)
+    presenter.run()
+
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    main()
