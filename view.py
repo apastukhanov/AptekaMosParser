@@ -121,11 +121,11 @@ class MosAptekaGui(tk.Tk):
         self.parser_type.set(1)
         tk.Radiobutton(r_info,
                        text='Безопасная загрузка', anchor=tk.W, variable=self.parser_type,
-                       value=0, bg=self.bg, command=self._selected_safe_parsing)\
+                       value=0, bg=self.bg, command=self.selected_safe_parsing)\
             .grid(row=0, column=0, sticky=tk.W+tk.E, pady=10)
         tk.Radiobutton(r_info,
                        text='Быстрая загрузка', anchor=tk.W, variable=self.parser_type,
-                       value=1, bg=self.bg, command=self._selected_fast_parsing)\
+                       value=1, bg=self.bg, command=self.selected_fast_parsing)\
             .grid(row=1, column=0, sticky=tk.W+tk.E, pady=10)
 
         tk.Label(r_info, text='Количество потоков', bg=self.bg)\
@@ -135,7 +135,8 @@ class MosAptekaGui(tk.Tk):
         self.stream_option_menu = \
             tk.OptionMenu(r_info, self.streams_count, *OPTIONS_STREAMS)
         self.stream_option_menu.grid(row=2, column=1, sticky=tk.W + tk.E)
-        self.is_proxy = 0
+        self.is_proxy = tk.IntVar(r_info)
+        self.is_proxy.set(0)
         self.proxy_checkbtn = tk.Checkbutton(r_info, text='Использовать прокси',
                                              variable=self.is_proxy,
                                              onvalue=1,
@@ -168,12 +169,12 @@ class MosAptekaGui(tk.Tk):
             .grid(row=2, column=0, padx=10, sticky=tk.W)
         return r_info
 
-    def _selected_safe_parsing(self):
+    def selected_safe_parsing(self):
         print(self.parser_type.get())
         self.proxy_checkbtn.config(state='disabled')
         self.stream_option_menu.config(state='disabled')
 
-    def _selected_fast_parsing(self):
+    def selected_fast_parsing(self):
         print(self.parser_type.get())
         self.proxy_checkbtn.config(state='active')
         self.stream_option_menu.config(state='active')

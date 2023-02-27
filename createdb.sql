@@ -15,6 +15,7 @@ create table prices(
 create table gui_settings(
     id integer primary key AUTOINCREMENT,
     excel_path varchar(255),
+    is_url_parsed int,
     parser_type int,
     streams_count int,
     is_proxy int

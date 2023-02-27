@@ -75,21 +75,25 @@ class Presenter:
         self.view.destroy()
 
     def _on_open(self):
-        settings = self.model.fetchall('gui_settings', ['excel_path',
-                                             'parser_type',
-                                             'streams_count',
-                                             'is_proxy'])[0]
+        settings = self.model.fetchall('gui_settings',
+                                       ['excel_path', 'is_url_parsed',
+                                        'parser_type', 'streams_count',
+                                        'is_proxy'])
         if settings:
-            self.view.main_menu_path_label.config(text=settings['excel_path'])
-            self.view.parser_type.set(settings['parser_type'])
-            self.view.streams_count.set(settings['streams_count'])
-            self.view.is_proxy = settings['is_proxy']
+            self.view.main_menu_path_label.config(text=settings[0]['excel_path'])
+            self.view.is_url_parsed.set(settings[0]['is_url_parsed'])
+            self.view.parser_type.set(settings[0]['parser_type'])
+            self.view.streams_count.set(settings[0]['streams_count'])
+            self.view.is_proxy.set(settings[0]['is_proxy'])
+            if not settings[0]['parser_type']:
+                self.view.selected_safe_parsing()
 
     def _save_view_settings(self):
         settings = {'excel_path': self.view.main_menu_path_label.cget('text'),
+                    'is_url_parsed': self.view.is_url_parsed.get(),
                     'parser_type': self.view.parser_type.get(),
                     'streams_count': self.view.streams_count.get(),
-                    'is_proxy': self.view.is_proxy}
+                    'is_proxy': self.view.is_proxy.get()}
         self.model.clear_table('gui_settings')
         self.model.insert('gui_settings', list(settings.keys()), [tuple(settings.values())])
 
