@@ -34,10 +34,14 @@ class Parser(Protocol):
 
 
 class BasicParser:
-    def __init__(self, streams_count: int):
+    def __init__(self, streams_count: int,
+                 user_agents: List[str] = None,
+                 proxies: List[str] = None):
         self.sess = requests.Session()
         self.sess.headers.update(HEADERS)
         self.streams_count = streams_count
+        self.user_agents = user_agents
+        self.proxies = proxies
 
     def get_urls_from_page(self, html: str, is_first: bool):
         soup = BeautifulSoup(html, 'lxml')
@@ -90,27 +94,28 @@ class BasicParser:
             data = self._helper_url_collector(page)
             model.insert('urls', ['url', 'name'], data)
             output.append(data)
-        return output
+        return list(itertools.chain.from_iterable(output))
+
 
     def get_page_source(self, url: str,
-                        params: Dict = None,
-                        user_agents: list[str] = None,
-                        proxies: list[str] = None):
-        if user_agents:
-            self.sess.headers['user-agent'] = choice(user_agents)
+                        params: Dict = None):
+        if self.user_agents:
+            self.sess.headers['user-agent'] = choice(self.user_agents)
         req_fn = self.sess.get
         if params:
             req_fn = partial(self.sess.get, params=params)
-        if proxies:
-            proxy = choice(proxies)
+        if self.proxies:
+            proxy = choice(self.proxies)
             req_fn = partial(req_fn, proxies={'https': 'https://' + proxy})
         html = req_fn(url).text
         return html
 
 
 class MultiStreamsParser(BasicParser):
-    def __init__(self, streams_count: int):
-        super().__init__(streams_count)
+    def __init__(self, streams_count: int,
+                 user_agents: List[str] = None,
+                 proxies: List[str] = None):
+        super().__init__(streams_count, user_agents, proxies)
 
     def collect_all_urls(self, page_count: int, model: Model):
         model.clear_table('urls')

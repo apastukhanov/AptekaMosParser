@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.messagebox
 from tkinter import ttk
 from tkinter import filedialog
 
@@ -38,7 +39,7 @@ class Presenter(Protocol):
 
 
 class MosAptekaGui(tk.Tk):
-    """"""
+    """GUI для настройки парсера сайта https://aptekamos.ru/"""
     def __init__(self) -> None:
         super().__init__()
         self.title(TITLE)
@@ -116,20 +117,20 @@ class MosAptekaGui(tk.Tk):
 
     def _create_parse_settings_tab(self, tab: ttk.Notebook):
         r_info = ttk.LabelFrame(tab, text='\nВыбор Парсера\n')
-        r_var = tk.IntVar()
-        r_var.set(0)
+        self.parser_type = tk.IntVar()
+        self.parser_type.set(1)
         tk.Radiobutton(r_info,
-                       text='Безопасная загрузка', anchor=tk.W, variable=r_var,
+                       text='Безопасная загрузка', anchor=tk.W, variable=self.parser_type,
                        value=0, bg=self.bg, command=self._selected_safe_parsing)\
             .grid(row=0, column=0, sticky=tk.W+tk.E, pady=10)
         tk.Radiobutton(r_info,
-                       text='Быстрая загрузка', anchor=tk.W, variable=r_var,
+                       text='Быстрая загрузка', anchor=tk.W, variable=self.parser_type,
                        value=1, bg=self.bg, command=self._selected_fast_parsing)\
             .grid(row=1, column=0, sticky=tk.W+tk.E, pady=10)
 
         tk.Label(r_info, text='Количество потоков', bg=self.bg)\
             .grid(row=2, column=0, pady=10, padx=5)
-        self.streams_count = tk.StringVar(r_info)
+        self.streams_count = tk.IntVar(r_info)
         self.streams_count.set(OPTIONS_STREAMS[0])
         self.stream_option_menu = \
             tk.OptionMenu(r_info, self.streams_count, *OPTIONS_STREAMS)
@@ -168,10 +169,12 @@ class MosAptekaGui(tk.Tk):
         return r_info
 
     def _selected_safe_parsing(self):
+        print(self.parser_type.get())
         self.proxy_checkbtn.config(state='disabled')
         self.stream_option_menu.config(state='disabled')
 
     def _selected_fast_parsing(self):
+        print(self.parser_type.get())
         self.proxy_checkbtn.config(state='active')
         self.stream_option_menu.config(state='active')
 
@@ -179,7 +182,7 @@ class MosAptekaGui(tk.Tk):
         file_path = filedialog.askdirectory(initialdir=str(DEFAULT_PATH))
         if file_path:
             self.main_menu_path_label.config(text=file_path)
-        print(self.main_menu_path_label.cget('text'))
+
 
     def get_entry_text(self) -> str:
         pass

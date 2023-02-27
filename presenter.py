@@ -32,6 +32,7 @@ class Presenter:
     def __init__(self, model: Model, view: View) -> None:
         self.model = model
         self.view = view
+        self.view.protocol('WM_DELETE_WINDOW', self._on_close)
 
     def handle_add_task(self, event=None) -> None:
         task = self.view.get_entry_text()
@@ -69,7 +70,31 @@ class Presenter:
         """print(self.is_url_parsed.get())"""
         pass
 
+    def _on_close(self):
+        self._save_view_settings()
+        self.view.destroy()
+
+    def _on_open(self):
+        settings = self.model.fetchall('gui_settings', ['excel_path',
+                                             'parser_type',
+                                             'streams_count',
+                                             'is_proxy'])[0]
+        if settings:
+            self.view.main_menu_path_label.config(text=settings['excel_path'])
+            self.view.parser_type.set(settings['parser_type'])
+            self.view.streams_count.set(settings['streams_count'])
+            self.view.is_proxy = settings['is_proxy']
+
+    def _save_view_settings(self):
+        settings = {'excel_path': self.view.main_menu_path_label.cget('text'),
+                    'parser_type': self.view.parser_type.get(),
+                    'streams_count': self.view.streams_count.get(),
+                    'is_proxy': self.view.is_proxy}
+        self.model.clear_table('gui_settings')
+        self.model.insert('gui_settings', list(settings.keys()), [tuple(settings.values())])
+
     def run(self) -> None:
         self.view.init_ui(self)
+        self._on_open()
         # self.update_task_list()
         self.view.mainloop()
