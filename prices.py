@@ -8,7 +8,7 @@ from config import URL
 from model import Model
 
 
-def prepare_url_with_prices(raw_url: str) -> str:
+def make_prices_page_url(raw_url: str) -> str:
     return URL + raw_url.replace('/instrukciya', '').replace('?m=1', '') + '/ceni'
 
 
@@ -17,7 +17,7 @@ def get_price_page_source(url: str):
 
 
 def get_price_info(data: Dict) -> List:
-    url_price = prepare_url_with_prices(data['url'])
+    url_price = make_prices_page_url(data['url'])
     html = get_price_page_source(url_price)
     soup = BeautifulSoup(html, 'lxml')
     stores = [el.text for el in soup.find_all(class_='ama-org-name')]
