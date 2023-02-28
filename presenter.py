@@ -74,7 +74,7 @@ class Presenter:
     def click_get_prices(self):
         parser = self.get_parser()
         if self.view.is_url_parsed.get():
-            print(parser.collect_all_urls(4, self.model))
+            print(parser.collect_all_urls(2, self.model))
         print(parser.collect_all_prices(self.model))
 
     def click_add_filter(self):

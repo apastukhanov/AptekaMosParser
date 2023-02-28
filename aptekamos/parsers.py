@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from functools import partial
 import itertools
 import random
@@ -23,27 +24,35 @@ def make_prices_page_url(raw_url: str) -> str:
     return URL + raw_url.replace('/instrukciya', '').replace('?m=1', '') + '/ceni'
 
 
-class Parser(Protocol):
+class Parser(ABC):
+    @abstractmethod
     def get_urls_from_page(self):
         ...
 
+    @abstractmethod
     def get_prices(self):
         ...
 
+    @abstractmethod
     def collect_all_urls(self):
         ...
 
-    def collect_all_prices(self):
-        ...
+    def collect_all_prices(self, model: Model):
+        output = []
+        model.clear_table('prices')
+        list_data = model.fetchall('urls', ['id', 'url', 'name'])
+        for data in list_data:
+            prices = self.get_prices(data)
+            output.append(prices)
+            model.insert('prices', ['drug_id', 'drug_name', 'store_name', 'price'], prices)
+        return output
 
 
-class BasicParser:
-    def __init__(self, streams_count: int,
-                 user_agents: List[str] = None,
+class BasicParser(Parser):
+    def __init__(self, user_agents: List[str] = None,
                  proxies: List[str] = None):
         self.sess = requests.Session()
         self.sess.headers.update(HEADERS)
-        self.streams_count = streams_count
         self.user_agents = user_agents
         self.proxies = proxies
 
@@ -72,15 +81,6 @@ class BasicParser:
         names = [data['name'] for _ in range(len(stores))]
         return list(zip(ids, names, stores, prices))
 
-    def collect_all_prices(self, model: Model):
-        output = []
-        model.clear_table('prices')
-        list_data = model.fetchall('urls', ['id', 'url', 'name'])
-        for data in list_data:
-            prices = self.get_prices(data)
-            output.append(prices)
-            model.insert('prices', ['drug_id', 'drug_name', 'store_name', 'price'], prices)
-        return output
 
     def _helper_url_collector(self, page: int):
         html = self.get_page_source(URL, params={'page': page})
@@ -116,7 +116,8 @@ class MultiStreamsParser(BasicParser):
     def __init__(self, streams_count: int,
                  user_agents: List[str] = None,
                  proxies: List[str] = None):
-        super().__init__(streams_count, user_agents, proxies)
+        super().__init__(user_agents, proxies)
+        self.streams_count = streams_count
 
     def collect_all_urls(self, page_count: int, model: Model):
         model.clear_table('urls')
@@ -133,10 +134,10 @@ class MultiStreamsParser(BasicParser):
             result = p.map(self.get_prices, list_data)
         data = list(itertools.chain.from_iterable(result))
         model.insert('prices', ['drug_id', 'drug_name', 'store_name', 'price'], data)
-        return result
+        return data
 
 
-class WebBrowserParser:
+class WebBrowserParser(Parser):
 
     def __init__(self):
         options = Options()
@@ -171,13 +172,3 @@ class WebBrowserParser:
         ids = [data['id'] for _ in range(len(stores))]
         names = [data['name'] for _ in range(len(stores))]
         return list(zip(ids, names, stores, prices))
-
-    def collect_all_prices(self, model: Model):
-        output = []
-        model.clear_table('prices')
-        list_data = model.fetchall('urls', ['id', 'url', 'name'])
-        for data in list_data:
-            prices = self.get_prices(data)
-            output.append(prices)
-            model.insert('prices', ['drug_id', 'drug_name', 'store_name', 'price'], prices)
-        return output
