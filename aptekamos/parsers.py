@@ -11,6 +11,10 @@ from typing import Protocol, Dict, List
 import requests
 from bs4 import BeautifulSoup
 
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+
 from config import HEADERS, URL
 from model import Model
 
@@ -64,8 +68,6 @@ class BasicParser:
         stores = [el.text for el in soup.find_all(class_='ama-org-name')]
         prices = [float(el.text.split('р')[0].replace('\xa0', ''))
                   for el in soup.find_all(class_='ama-org-minp')]
-        print(stores)
-        print(prices)
         ids = [data['id'] for _ in range(len(stores))]
         names = [data['name'] for _ in range(len(stores))]
         return list(zip(ids, names, stores, prices))
@@ -73,7 +75,7 @@ class BasicParser:
     def collect_all_prices(self, model: Model):
         output = []
         model.clear_table('prices')
-        list_data = model.fetchall('urls', ['id', 'url', 'name'])[:10]
+        list_data = model.fetchall('urls', ['id', 'url', 'name'])
         for data in list_data:
             prices = self.get_prices(data)
             output.append(prices)
@@ -95,7 +97,6 @@ class BasicParser:
             model.insert('urls', ['url', 'name'], data)
             output.append(data)
         return list(itertools.chain.from_iterable(output))
-
 
     def get_page_source(self, url: str,
                         params: Dict = None):
@@ -137,14 +138,49 @@ class MultiStreamsParser(BasicParser):
 
 
 class WebBrowserParser:
+
+    def __init__(self, streams_count: int = None,
+                 user_agents: List[str] = None,
+                 proxies: List[str] = None):
+        options = Options()
+        options.add_argument("--headless=new")
+        self.driver = webdriver.Chrome()
+
     def get_urls_from_page(self):
-        pass
+        return [(el.get_property('href').replace(URL, ''),
+                 el.get_property('innerText')) for el in
+                self.driver.find_elements(by=By.CLASS_NAME,
+                                          value='product-name')]
 
-    def parse_prices(self):
-        pass
+    def collect_all_urls(self, pages_count: int, model: Model):
+        model.clear_table('urls')
+        output = []
+        for page in range(1, pages_count):
+            self.driver.get(URL + f'/page={page}')
+            data = self.get_urls_from_page()
+            model.insert('urls', ['url', 'name'], data)
+            output.append(data)
+        return list(itertools.chain.from_iterable(output))
 
-    def navigate_page(self):
-        pass
+    def get_prices(self, data: Dict):
+        url_price = make_prices_page_url(data['url'])
+        self.driver.get(url_price)
+        stores = [el.get_property('innerText')
+                  for el in self.driver
+                  .find_elements(by=By.CLASS_NAME, value='org-name')]
+        prices = [el.get_property('innerText')
+                    for el in self.driver.find_elements(by=By.CLASS_NAME,
+                                                        value='org-price-c')]
+        ids = [data['id'] for _ in range(len(stores))]
+        names = [data['name'] for _ in range(len(stores))]
+        return list(zip(ids, names, stores, prices))
 
-    def collect_all_urls(self):
-        pass
+    def collect_all_prices(self, model: Model):
+        output = []
+        model.clear_table('prices')
+        list_data = model.fetchall('urls', ['id', 'url', 'name'])
+        for data in list_data:
+            prices = self.get_prices(data)
+            output.append(prices)
+            model.insert('prices', ['drug_id', 'drug_name', 'store_name', 'price'], prices)
+        return output

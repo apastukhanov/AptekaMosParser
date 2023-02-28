@@ -1,6 +1,19 @@
 from __future__ import annotations
 from typing import Protocol
 
+from aptekamos.parsers import (
+    BasicParser,
+    MultiStreamsParser,
+    WebBrowserParser
+)
+
+
+PARSERS = {
+    'safe': WebBrowserParser,
+    'basic': BasicParser,
+    'multi': MultiStreamsParser
+}
+
 
 class Model(Protocol):
     def _init_db(self):
@@ -48,8 +61,21 @@ class Presenter:
         tasks = self.model.get_tasks()
         self.view.update_task_list(tasks)
 
+    def get_parser(self):
+        if self.view.parser_type.get() == 0:
+            parser = PARSERS['safe']()
+        else:
+            if self.view.streams_count.get() > 1:
+                parser = PARSERS['multi'](self.view.streams_count.get())
+            else:
+                parser = PARSERS['basic']()
+        return parser
+
     def click_get_prices(self):
-        pass
+        parser = self.get_parser()
+        if self.view.is_url_parsed.get():
+            print(parser.collect_all_urls(4, self.model))
+        print(parser.collect_all_prices(self.model))
 
     def click_add_filter(self):
         pass
