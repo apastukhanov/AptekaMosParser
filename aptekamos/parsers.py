@@ -120,7 +120,6 @@ class MultiStreamsParser(BasicParser):
 
     def collect_all_urls(self, page_count: int, model: Model):
         model.clear_table('urls')
-        print(self.streams_count)
         with Pool(self.streams_count) as p:
             result = p.map(self._helper_url_collector, range(1, page_count))
         data = list(itertools.chain.from_iterable(result))
@@ -139,12 +138,10 @@ class MultiStreamsParser(BasicParser):
 
 class WebBrowserParser:
 
-    def __init__(self, streams_count: int = None,
-                 user_agents: List[str] = None,
-                 proxies: List[str] = None):
+    def __init__(self):
         options = Options()
         options.add_argument("--headless=new")
-        self.driver = webdriver.Chrome()
+        self.driver = webdriver.Chrome(options=options)
 
     def get_urls_from_page(self):
         return [(el.get_property('href').replace(URL, ''),
