@@ -40,6 +40,7 @@ class Model:
 
     def clear_table(self, table: str) -> None:
         self.cursor.execute(f"delete from {table}")
+        self.cursor.execute(f"UPDATE SQLITE_SEQUENCE SET SEQ=0 WHERE NAME='{table}';")
         self.conn.commit()
 
     def get_cursor(self):

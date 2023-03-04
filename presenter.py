@@ -4,7 +4,8 @@ from typing import Protocol
 from aptekamos.parsers import (
     BasicParser,
     MultiStreamsParser,
-    WebBrowserParser
+    WebBrowserParser,
+    download_drugs_info
 )
 
 
@@ -74,8 +75,10 @@ class Presenter:
     def click_get_prices(self):
         parser = self.get_parser()
         if self.view.is_url_parsed.get():
-            print(parser.collect_all_urls(2, self.model))
-        print(parser.collect_all_prices(self.model))
+            # page_count = download_drugs_info(self.model)
+            page_count = 2
+            parser.collect_all_urls(page_count, self.model)
+        parser.collect_all_prices(self.model)
 
     def click_add_filter(self):
         pass

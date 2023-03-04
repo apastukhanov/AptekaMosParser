@@ -1,7 +1,8 @@
 create table urls(
     id integer primary key,
     url varchar(255),
-    name varchar(255)
+    name varchar(255),
+    drug_id_egk integer
 );
 
 create table prices(
@@ -32,3 +33,10 @@ create table user_agents(
     id integer primary key AUTOINCREMENT,
     user_agent varchar(255)
 );
+
+create table drugs_info(
+    id integer primary key AUTOINCREMENT,
+    drugId integer,
+    drugName varchar(255)
+)
+

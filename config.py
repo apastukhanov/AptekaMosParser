@@ -10,6 +10,7 @@ HEADERS = {
 
 URL = "https://aptekamos.ru/tovary"
 
+START_PAGE = 1
 PAGES = 632
 
 TITLE = 'AptekaMos Parser'
