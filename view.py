@@ -3,6 +3,8 @@ import tkinter.messagebox
 from tkinter import ttk
 from tkinter import filedialog
 
+from ttkwidgets.autocomplete import AutocompleteEntry
+
 from typing import Protocol
 
 from config import (
@@ -91,10 +93,17 @@ class MosAptekaGui(tk.Tk):
         self.main_menu_box.grid(row=1, column=2, pady=20)
         return r_info
 
+    def create_status_bar(self, tab: ttk.Notebook, presenter: Presenter):
+        r_info = ttk.LabelFrame(tab, text='\nЛоги\n')
+        pass
+
     def _create_filter_tab(self, tab: ttk.Notebook, presenter: Presenter):
         r_info = ttk.LabelFrame(tab, text='\nСписок исключений\n')
-        ttk.Entry(r_info, width=30).grid(row=0, column=0, sticky=tk.E+tk.W,
-                                         columnspan=3, padx=10)
+        names = presenter.model.fetchall('urls', ['name'])
+        entries = [x['name'] for x in names] if names else []
+        self.entry = AutocompleteEntry(r_info, width=30, completevalues=entries)
+        self.entry.grid(row=0, column=0, sticky=tk.E+tk.W, columnspan=3, padx=10)
+        self.entry.bind("<Return>", presenter.click_add_filter)
         scrollbar = tk.Scrollbar(r_info)
         scrollbar.grid(row=1, column=4, sticky=tk.N + tk.S, pady=5)
         ttk.Button(r_info, text='Добавить исключение',
@@ -170,12 +179,10 @@ class MosAptekaGui(tk.Tk):
         return r_info
 
     def selected_safe_parsing(self):
-        print(self.parser_type.get())
         self.proxy_checkbtn.config(state='disabled')
         self.stream_option_menu.config(state='disabled')
 
     def selected_fast_parsing(self):
-        print(self.parser_type.get())
         self.proxy_checkbtn.config(state='active')
         self.stream_option_menu.config(state='active')
 
@@ -183,7 +190,6 @@ class MosAptekaGui(tk.Tk):
         file_path = filedialog.askdirectory(initialdir=str(DEFAULT_PATH))
         if file_path:
             self.main_menu_path_label.config(text=file_path)
-
 
     def get_entry_text(self) -> str:
         pass
@@ -195,6 +201,10 @@ class MosAptekaGui(tk.Tk):
         for proxy in proxies:
             self.proxies_list.insert(tk.END, proxy)
 
+    def delete_filters_list(self):
+        self.flts_list.delete(0, tk.END)
+
     def update_filters_list(self, filters: list[str]) -> None:
+        self.delete_filters_list()
         for fltr in filters:
             self.flts_list.insert(tk.END, fltr)

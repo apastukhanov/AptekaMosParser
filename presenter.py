@@ -8,6 +8,11 @@ from aptekamos.parsers import (
     download_drugs_info
 )
 
+from excel_processor import (
+    create_output_excel,
+    save_excel
+)
+
 
 PARSERS = {
     'safe': WebBrowserParser,
@@ -79,12 +84,34 @@ class Presenter:
             page_count = 2
             parser.collect_all_urls(page_count, self.model)
         parser.collect_all_prices(self.model)
+        df = create_output_excel(self.model)
+        dir_path = self.view.main_menu_path_label.cget('text')
+        save_excel(df=df, dir_path=dir_path)
 
-    def click_add_filter(self):
-        pass
+    def click_add_filter(self, event=None):
+        name = self.view.entry.get()
+        if name == '':
+            return
+        cols = ['url', 'name']
+        urls = self.model.fetchall('urls', cols)
+        filters = self.model.fetchall('filters', cols)
+        urls_search = list(filter(lambda x: x['name'] == name, urls))
+        filters_search = list(filter(lambda x: x['name'] == name, filters))
+        if not filters_search:
+            self.model.insert('filters', cols, [(urls_search[0]['url'],
+                                                 urls_search[0]['name'])])
+        self.view.entry.delete(0, len(name))
+        self.update_filters()
+
+    def update_filters(self):
+        cols = ['url', 'name']
+        filters = [x['name'] for x in self.model.fetchall('filters', cols)]
+        if filters:
+            self.view.update_filters_list(filters)
 
     def click_clear_filters(self):
-        pass
+        self.model.clear_table('filters')
+        self.view.delete_filters_list()
 
     def click_add_filters_from_file(self):
         pass
@@ -128,6 +155,7 @@ class Presenter:
 
     def run(self) -> None:
         self.view.init_ui(self)
+        self.update_filters()
         self._on_open()
         # self.update_task_list()
         self.view.mainloop()
