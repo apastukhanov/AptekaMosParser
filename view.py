@@ -59,13 +59,15 @@ class MosAptekaGui(tk.Tk):
             tab.grid()
             tab_control.add(tab, text=TAB_NAMES[i])
         r_info = self._create_main_menu(tab1, presenter)
+        status_info = self._create_status_bar(tab1, presenter)
         fltr_info = self._create_filter_tab(tab2, presenter)
         engine_info = self._create_parse_settings_tab(tab3)
         proxies_info = self._create_proxies_list_box(tab3, presenter)
         for i in range(3):
             r_info.columnconfigure(i, weight=1)
+            status_info.columnconfigure(i, weight=1)
             fltr_info.columnconfigure(i, weight=1)
-        for el in [r_info, fltr_info, engine_info,
+        for el in [r_info, fltr_info, status_info, engine_info,
                    proxies_info, tab_control]:
             el.pack(fill='both')
 
@@ -93,9 +95,16 @@ class MosAptekaGui(tk.Tk):
         self.main_menu_box.grid(row=1, column=2, pady=20)
         return r_info
 
-    def create_status_bar(self, tab: ttk.Notebook, presenter: Presenter):
+    def _create_status_bar(self, tab: ttk.Notebook, presenter: Presenter):
         r_info = ttk.LabelFrame(tab, text='\nЛоги\n')
-        pass
+        self.status_str = tk.StringVar()
+        self.status_str = ""
+        self.status_label = tk.Listbox(r_info, height=11,
+                                       font=('Times New Roman', 17),
+                                       background=self.bg,
+                                       activestyle='none')
+        self.status_label.grid(row=0, columnspan=3, sticky=tk.E+tk.W+tk.N+tk.S, padx=10, pady=5)
+        return r_info
 
     def _create_filter_tab(self, tab: ttk.Notebook, presenter: Presenter):
         r_info = ttk.LabelFrame(tab, text='\nСписок исключений\n')
@@ -203,6 +212,9 @@ class MosAptekaGui(tk.Tk):
 
     def delete_filters_list(self):
         self.flts_list.delete(0, tk.END)
+
+    def update_status(self, status_text):
+        self.status_label.insert(tk.END, status_text)
 
     def update_filters_list(self, filters: list[str]) -> None:
         self.delete_filters_list()

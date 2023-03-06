@@ -29,7 +29,7 @@ def collect_all_urls(pages_count: int) -> None:
         data = get_urls_names_from_page(html, is_first=flag)
         print(data)
         model.insert('urls', ['url', 'name'], data)
-        sleep(random.uniform(0,2))
+        sleep(random.uniform(0, 2))
 
 
 def test_get_url():

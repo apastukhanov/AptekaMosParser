@@ -2,7 +2,6 @@ from typing import Dict, List
 
 from bs4 import BeautifulSoup
 
-from sess import sess
 from config import URL
 
 from model import Model
