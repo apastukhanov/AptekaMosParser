@@ -81,7 +81,7 @@ class Presenter:
         parser = self.get_parser()
         if self.view.is_url_parsed.get():
             self.view.update_status('Скачивание urls...')
-            # page_count = download_drugs_info(self.model)
+            page_count = download_drugs_info(self.model)
             page_count = 2
             parser.collect_all_urls(page_count, self.model)
             self.view.update_status('Скачивание urls завершено!')

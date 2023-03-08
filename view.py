@@ -45,7 +45,10 @@ class MosAptekaGui(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title(TITLE)
-        self.geometry("570x480+400+300")
+        self.scr_w = self.winfo_screenwidth()
+        self.scr_h = self.winfo_screenheight()
+        self.geometry(f"{round(self.scr_h*0.58)}x{round(self.scr_w*0.32)}"
+                      f"+{round(self.scr_h*0.41)}+{round(self.scr_w*0.2)}")
         self.resizable(height=False, width=False)
         self.style = ttk.Style(self)
         self.style.theme_use('classic')
@@ -79,7 +82,7 @@ class MosAptekaGui(tk.Tk):
         r_info = ttk.LabelFrame(tab, text='\nГлавное меню программы\n')
         ttk.Label(r_info, text='Путь сохранения Excel:').grid(row=0, column=0)
         self.main_menu_path_label = tk.Label(r_info, text=DEFAULT_PATH, anchor=tk.W,
-                                             width=30, background='white')
+                                             width=round(0.02*self.scr_w), background='white')
         self.main_menu_path_label.grid(row=0, column=1)
         ttk.Button(r_info, text='Изменить', command=self._click_change_excel_path)\
             .grid(row=0, column=2)
@@ -99,7 +102,7 @@ class MosAptekaGui(tk.Tk):
         r_info = ttk.LabelFrame(tab, text='\nЛоги\n')
         self.status_str = tk.StringVar()
         self.status_str = ""
-        self.status_label = tk.Listbox(r_info, height=11,
+        self.status_label = tk.Listbox(r_info, height=round(0.01 * self.scr_h),
                                        font=('Times New Roman', 17),
                                        background=self.bg,
                                        activestyle='none')
@@ -110,7 +113,7 @@ class MosAptekaGui(tk.Tk):
         r_info = ttk.LabelFrame(tab, text='\nСписок исключений\n')
         names = presenter.model.fetchall('urls', ['name'])
         entries = [x['name'] for x in names] if names else []
-        self.entry = AutocompleteEntry(r_info, width=30, completevalues=entries)
+        self.entry = AutocompleteEntry(r_info, width=round(0.02*self.scr_w), completevalues=entries)
         self.entry.grid(row=0, column=0, sticky=tk.E+tk.W, columnspan=3, padx=10)
         self.entry.bind("<Return>", presenter.click_add_filter)
         scrollbar = tk.Scrollbar(r_info)
@@ -118,7 +121,7 @@ class MosAptekaGui(tk.Tk):
         ttk.Button(r_info, text='Добавить исключение',
                    command=presenter.click_add_filter)\
             .grid(row=0, column=3, sticky=tk.E+tk.W, padx=10)
-        self.flts_list = tk.Listbox(r_info, height=15,
+        self.flts_list = tk.Listbox(r_info, height=round(0.015*self.scr_h),
                                     font=('Times New Roman', 17),
                                     activestyle='none')
         self.flts_list.grid(row=1, column=0,
@@ -166,7 +169,7 @@ class MosAptekaGui(tk.Tk):
     def _create_proxies_list_box(self, tab: ttk.Notebook, presenter: Presenter):
         r_info = ttk.LabelFrame(tab, text='\nНастройка прокси\n')
         proxy = tk.StringVar()
-        self.proxy_entry = ttk.Entry(r_info, width=30, textvariable=proxy)
+        self.proxy_entry = ttk.Entry(r_info, width=round(self.scr_w*0.02), textvariable=proxy)
         self.proxy_entry.grid(row=0, column=0, sticky=tk.E + tk.W, padx=10)
         var1 = tk.StringVar(r_info)
         var1.set(OPTIONS_PROTOCOL[0])
@@ -175,7 +178,7 @@ class MosAptekaGui(tk.Tk):
             .grid(row=0, column=2, sticky=tk.E + tk.W, padx=10)
         scrollbar = tk.Scrollbar(r_info)
         scrollbar.grid(row=1, column=4, sticky=tk.N + tk.S + tk.E, pady=5, padx=5)
-        self.proxies_list = tk.Listbox(r_info, height=5,
+        self.proxies_list = tk.Listbox(r_info, height=round(0.005*self.scr_h),
                                        font=('Times New Roman', 17))
         self.proxies_list.grid(row=1, column=0,
                                columnspan=4,
