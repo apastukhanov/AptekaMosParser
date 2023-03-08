@@ -87,15 +87,16 @@ class MosAptekaGui(tk.Tk):
         ttk.Button(r_info, text='Изменить', command=self._click_change_excel_path)\
             .grid(row=0, column=2)
         ttk.Button(r_info, text='Скачать цены', command=presenter.click_get_prices)\
-            .grid(row=1, column=0, columnspan=2, padx=20, sticky=tk.E+tk.W)
+            .grid(row=1, column=0, columnspan=2, padx=round(self.scr_w*0.013), sticky=tk.E+tk.W)
         self.is_url_parsed = tk.IntVar()
+        self.is_url_parsed.set(1)
         self.main_menu_box = tk.Checkbutton(r_info, text='Обновить url',
                                             variable=self.is_url_parsed,
                                             onvalue=1,
                                             offvalue=0,
                                             command=presenter.print_menu_box_value,
                                             bg=self.bg)
-        self.main_menu_box.grid(row=1, column=2, pady=20)
+        self.main_menu_box.grid(row=1, column=2, pady=round(self.scr_h*0.02))
         return r_info
 
     def _create_status_bar(self, tab: ttk.Notebook, presenter: Presenter):
@@ -106,7 +107,8 @@ class MosAptekaGui(tk.Tk):
                                        font=('Times New Roman', 17),
                                        background=self.bg,
                                        activestyle='none')
-        self.status_label.grid(row=0, columnspan=3, sticky=tk.E+tk.W+tk.N+tk.S, padx=10, pady=5)
+        self.status_label.grid(row=0, columnspan=3, sticky=tk.E+tk.W+tk.N+tk.S,
+                               padx=round(self.scr_w*0.007), pady=round(self.scr_h*0.005))
         return r_info
 
     def _create_filter_tab(self, tab: ttk.Notebook, presenter: Presenter):
@@ -114,26 +116,27 @@ class MosAptekaGui(tk.Tk):
         names = presenter.model.fetchall('urls', ['name'])
         entries = [x['name'] for x in names] if names else []
         self.entry = AutocompleteEntry(r_info, width=round(0.02*self.scr_w), completevalues=entries)
-        self.entry.grid(row=0, column=0, sticky=tk.E+tk.W, columnspan=3, padx=10)
+        self.entry.grid(row=0, column=0, sticky=tk.E+tk.W, columnspan=3, padx=round(self.scr_w*0.007))
         self.entry.bind("<Return>", presenter.click_add_filter)
         scrollbar = tk.Scrollbar(r_info)
-        scrollbar.grid(row=1, column=4, sticky=tk.N + tk.S, pady=5)
+        scrollbar.grid(row=1, column=4, sticky=tk.N + tk.S, pady=round(self.scr_h*0.005))
         ttk.Button(r_info, text='Добавить исключение',
                    command=presenter.click_add_filter)\
-            .grid(row=0, column=3, sticky=tk.E+tk.W, padx=10)
+            .grid(row=0, column=3, sticky=tk.E+tk.W, padx=round(self.scr_w*0.007))
         self.flts_list = tk.Listbox(r_info, height=round(0.015*self.scr_h),
                                     font=('Times New Roman', 17),
                                     activestyle='none')
         self.flts_list.grid(row=1, column=0,
                             columnspan=4,
-                            sticky=tk.E+tk.W+tk.N+tk.S, padx=10)
+                            sticky=tk.E+tk.W+tk.N+tk.S, padx=round(self.scr_w*0.007))
         self.flts_list.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.flts_list.yview)
         ttk.Button(r_info, text='Очистить исключения', command=presenter.click_clear_filters)\
-            .grid(row=2, column=0, padx=10, sticky=tk.W)
+            .grid(row=2, column=0, padx=round(self.scr_w*0.007), sticky=tk.W)
         ttk.Button(r_info, text='Загрузить исключения из файла',
                    command=presenter.click_add_filters_from_file)\
-            .grid(row=2, column=1, columnspan=3, sticky=tk.E+tk.W, padx=10)
+            .grid(row=2, column=1, columnspan=3, sticky=tk.E+tk.W,
+                  padx=round(self.scr_w*0.007))
         return r_info
 
     def _create_parse_settings_tab(self, tab: ttk.Notebook):
@@ -143,14 +146,15 @@ class MosAptekaGui(tk.Tk):
         tk.Radiobutton(r_info,
                        text='Безопасная загрузка', anchor=tk.W, variable=self.parser_type,
                        value=0, bg=self.bg, command=self.selected_safe_parsing)\
-            .grid(row=0, column=0, sticky=tk.W+tk.E, pady=10)
+            .grid(row=0, column=0, sticky=tk.W+tk.E, pady=round(self.scr_h*0.01))
         tk.Radiobutton(r_info,
                        text='Быстрая загрузка', anchor=tk.W, variable=self.parser_type,
                        value=1, bg=self.bg, command=self.selected_fast_parsing)\
-            .grid(row=1, column=0, sticky=tk.W+tk.E, pady=10)
+            .grid(row=1, column=0, sticky=tk.W+tk.E, pady=round(self.scr_h*0.01))
 
         tk.Label(r_info, text='Количество потоков', bg=self.bg)\
-            .grid(row=2, column=0, pady=10, padx=5)
+            .grid(row=2, column=0, pady=round(self.scr_h*0.01),
+                  padx=round(self.scr_w*0.0033))
         self.streams_count = tk.IntVar(r_info)
         self.streams_count.set(OPTIONS_STREAMS[0])
         self.stream_option_menu = \
@@ -170,24 +174,27 @@ class MosAptekaGui(tk.Tk):
         r_info = ttk.LabelFrame(tab, text='\nНастройка прокси\n')
         proxy = tk.StringVar()
         self.proxy_entry = ttk.Entry(r_info, width=round(self.scr_w*0.02), textvariable=proxy)
-        self.proxy_entry.grid(row=0, column=0, sticky=tk.E + tk.W, padx=10)
+        self.proxy_entry.grid(row=0, column=0, sticky=tk.E + tk.W, padx=round(self.scr_w*0.007))
         var1 = tk.StringVar(r_info)
         var1.set(OPTIONS_PROTOCOL[0])
         tk.OptionMenu(r_info, var1, *OPTIONS_PROTOCOL).grid(row=0, column=1)
         ttk.Button(r_info, text='Добавить прокси', command=presenter.click_add_proxy) \
-            .grid(row=0, column=2, sticky=tk.E + tk.W, padx=10)
+            .grid(row=0, column=2, sticky=tk.E + tk.W, padx=round(self.scr_w*0.007))
         scrollbar = tk.Scrollbar(r_info)
-        scrollbar.grid(row=1, column=4, sticky=tk.N + tk.S + tk.E, pady=5, padx=5)
+        scrollbar.grid(row=1, column=4, sticky=tk.N + tk.S + tk.E,
+                       pady=round(self.scr_h*0.005),
+                       padx=round(self.scr_w*0.003))
         self.proxies_list = tk.Listbox(r_info, height=round(0.005*self.scr_h),
                                        font=('Times New Roman', 17))
         self.proxies_list.grid(row=1, column=0,
                                columnspan=4,
-                               sticky=tk.E + tk.W + tk.N + tk.S, padx=5)
+                               sticky=tk.E + tk.W + tk.N + tk.S,
+                               padx=round(self.scr_w*0.0033))
         self.proxies_list.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.proxies_list.yview)
         ttk.Button(r_info, text='Очистить прокси',
                    command=presenter.click_clear_proxies)\
-            .grid(row=2, column=0, padx=10, sticky=tk.W)
+            .grid(row=2, column=0, padx=round(self.scr_w*0.007), sticky=tk.W)
         return r_info
 
     def selected_safe_parsing(self):
