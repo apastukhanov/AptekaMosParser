@@ -111,7 +111,8 @@ class Presenter:
 
     def update_filters(self):
         cols = ['url', 'name']
-        filters = [x['name'] for x in self.model.fetchall('filters', cols)]
+        filters = [f"{i+1}) {x['name']}" for i, x in
+                   enumerate(self.model.fetchall('filters', cols))]
         if filters:
             self.view.update_filters_list(filters)
 
