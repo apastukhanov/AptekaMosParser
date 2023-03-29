@@ -123,7 +123,7 @@ class MosAptekaGui(tk.Tk):
         ttk.Button(r_info, text='Добавить исключение',
                    command=presenter.click_add_filter)\
             .grid(row=0, column=3, sticky=tk.E+tk.W, padx=round(self.scr_w*0.007))
-        self.flts_list = tk.Listbox(r_info, height=round(0.015*self.scr_h),
+        self.flts_list = tk.Listbox(r_info, height=int(0.015*self.scr_h),
                                     font=('Times New Roman', 17),
                                     activestyle='none')
         self.flts_list.grid(row=1, column=0,
@@ -175,9 +175,9 @@ class MosAptekaGui(tk.Tk):
         proxy = tk.StringVar()
         self.proxy_entry = ttk.Entry(r_info, width=round(self.scr_w*0.02), textvariable=proxy)
         self.proxy_entry.grid(row=0, column=0, sticky=tk.E + tk.W, padx=round(self.scr_w*0.007))
-        var1 = tk.StringVar(r_info)
-        var1.set(OPTIONS_PROTOCOL[0])
-        tk.OptionMenu(r_info, var1, *OPTIONS_PROTOCOL).grid(row=0, column=1)
+        self.proxy_type = tk.StringVar(r_info)
+        self.proxy_type.set(OPTIONS_PROTOCOL[0])
+        tk.OptionMenu(r_info, self.proxy_type, *OPTIONS_PROTOCOL).grid(row=0, column=1)
         ttk.Button(r_info, text='Добавить прокси', command=presenter.click_add_proxy) \
             .grid(row=0, column=2, sticky=tk.E + tk.W, padx=round(self.scr_w*0.007))
         scrollbar = tk.Scrollbar(r_info)
@@ -217,11 +217,15 @@ class MosAptekaGui(tk.Tk):
         pass
 
     def update_proxies_list(self, proxies: list[str]) -> None:
+        self.delete_proxies_list()
         for proxy in proxies:
             self.proxies_list.insert(tk.END, proxy)
 
     def delete_filters_list(self):
         self.flts_list.delete(0, tk.END)
+
+    def delete_proxies_list(self):
+        self.proxies_list.delete(0, tk.END)
 
     def update_status(self, status_text):
         self.status_label.insert(tk.END, status_text)

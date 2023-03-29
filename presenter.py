@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import re
 from typing import Protocol
 
 from aptekamos.parsers import (
@@ -116,6 +118,13 @@ class Presenter:
         if filters:
             self.view.update_filters_list(filters)
 
+    def update_proxies(self):
+        cols = ['ip', 'port', 'proxy_type']
+        proxies = [f"{i+1}) {x['ip']} {x['port']} {x['proxy_type']}" for i, x in
+                   enumerate(self.model.fetchall('proxies', cols))]
+        if proxies:
+            self.view.update_proxies_list(proxies)
+
     def click_clear_filters(self):
         self.model.clear_table('filters')
         self.view.delete_filters_list()
@@ -124,10 +133,22 @@ class Presenter:
         pass
 
     def click_add_proxy(self):
-        pass
+        pattern = re.compile('\d{1,4}.\d{1,4}.\d{1,4}.\d{1,4}:\d{2,8}')
+        user_input = self.view.proxy_entry.get()
+        search = pattern.findall(user_input)
+        if search:
+            ip, port = search[0].split(':')
+            proxy_type = self.view.proxy_type.get()
+            ips = self.model.fetchall('proxies', ['ip'])
+            if not list(filter(lambda x: x['ip'] == ip, ips)):
+                cols = ['ip', 'port', 'proxy_type']
+                self.model.insert('proxies', cols, [(ip, port, proxy_type)])
+                self.update_proxies()
+                self.view.proxy_entry.delete(0, len(user_input))
 
     def click_clear_proxies(self):
-        pass
+        self.model.clear_table('proxies')
+        self.view.delete_proxies_list()
 
     def print_menu_box_value(self) -> None:
         """print(self.is_url_parsed.get())"""
@@ -163,6 +184,7 @@ class Presenter:
     def run(self) -> None:
         self.view.init_ui(self)
         self.update_filters()
+        self.update_proxies()
         self._on_open()
         # self.update_task_list()
         self.view.mainloop()
