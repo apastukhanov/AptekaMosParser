@@ -9,7 +9,7 @@ from model import Model
 def create_output_excel(model: Model):
     prices = pd.DataFrame(model.fetchall('prices',
                                          ['drug_id', 'drug_name',
-                                          'store_name', 'price']))
+                                          'store_name', 'producers', 'price']))
     info = model.fetchall('drugs_info', ['drugId', 'drugName'])
 
     def find(drug: str):
@@ -27,7 +27,7 @@ def create_output_excel(model: Model):
         return None
 
     prices['drug_id_egk'] = prices['drug_name'].apply(find)
-    return prices[['drug_id_egk', 'drug_name', 'store_name', 'price']].copy()
+    return prices[['drug_id_egk', 'drug_name', 'store_name', 'producers', 'price']].copy()
 
 
 def save_excel(df: pd.DataFrame, dir_path: str):

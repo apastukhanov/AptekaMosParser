@@ -15,6 +15,7 @@ create table prices(
     drug_id integer,
     drug_name varchar(255),
     store_name varchar(255),
+    producers varchar(255),
     price float
 );
 

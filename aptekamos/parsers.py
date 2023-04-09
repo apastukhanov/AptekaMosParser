@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-
+from webdriver_manager.chrome import ChromeDriverManager
 
 from config import HEADERS, URL, START_PAGE
 from model import Model
@@ -26,11 +26,16 @@ from exceptions import EmptyPage
 
 from progressbar import ProgressBar
 
+
 logging.basicConfig(level=logging.INFO)
 
 
 def make_prices_page_url(raw_url: str) -> str:
     return URL + raw_url.replace('/instrukciya', '').replace('?m=1', '') + '/ceni'
+
+
+def make_producers_page_url(raw_url: str) -> str:
+    return URL.replace('tovary', '') + 'goods/med-' + raw_url.split('/')[-2] + '/firms'
 
 
 def download_drugs_info(model: Model):
@@ -68,7 +73,7 @@ class Parser(ABC):
             prices = self.get_prices(data)
             output.append(prices)
             model.insert('prices', ['drug_id', 'drug_name',
-                                    'store_name', 'price'], prices)
+                                    'store_name', 'producers', 'price'], prices)
             pbar.update()
         pbar.close()
         return output
@@ -98,6 +103,17 @@ class BasicParser(Parser):
         html = self.get_page_source(url_price)
         return self.parse_drugs_prices(html, data)
 
+    def get_producers(self, data: Dict):
+        url_price = make_producers_page_url(data['url'])
+        html = self.get_page_source(url_price)
+        return self.parse_producers(html, data)
+
+    def parse_producers(self, html: str, data: Dict):
+        soup = BeautifulSoup(html, 'lxml')
+        producers = ', '.join([x.getText() for x in
+                              soup.find_all(class_='tree-filter-label function')])
+        return producers
+
     def parse_drugs_prices(self, html: str, data: Dict):
         soup = BeautifulSoup(html, 'lxml')
         stores = [el.text for el in soup.find_all(class_='ama-org-name')]
@@ -105,7 +121,9 @@ class BasicParser(Parser):
                   for el in soup.find_all(class_='ama-org-minp')]
         ids = [data['id'] for _ in range(len(stores))]
         names = [data['name'] for _ in range(len(stores))]
-        return list(zip(ids, names, stores, prices))
+        prod = self.get_producers(data)
+        producers = [prod for _ in range(len(stores))]
+        return list(zip(ids, names, stores, producers, prices))
 
     def _helper_url_collector(self, page: int):
         html = self.get_page_source(URL, params={'page': page})
@@ -180,7 +198,7 @@ class MultiStreamsParser(BasicParser):
         with Pool(self.streams_count) as p:
             result = p.map(self.get_prices, list_data)
         data = list(itertools.chain.from_iterable(result))
-        model.insert('prices', ['drug_id', 'drug_name', 'store_name', 'price'], data)
+        model.insert('prices', ['drug_id', 'drug_name', 'store_name', 'producers', 'price'], data)
         return data
 
 
@@ -189,7 +207,7 @@ class WebBrowserParser(Parser):
     def __init__(self):
         options = Options()
         options.add_argument("--headless=new")
-        self.driver = webdriver.Chrome(options=options)
+        self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
 
     def get_urls_from_page(self):
         elements = self.driver.find_elements(by=By.CLASS_NAME,
@@ -231,4 +249,10 @@ class WebBrowserParser(Parser):
                                                         value='org-price-c')]
         ids = [data['id'] for _ in range(len(stores))]
         names = [data['name'] for _ in range(len(stores))]
-        return list(zip(ids, names, stores, prices))
+        url_producers = make_producers_page_url(data['url'])
+        self.driver.get(url_producers)
+        prod = ', '.join([el.get_property('innerText') for el in
+                          self.driver.find_elements(by=By.CLASS_NAME,
+                                                    value='tree-filter-checkbox-c')])
+        producers = [prod for _ in range(len(stores))]
+        return list(zip(ids, names, stores, producers, prices))
