@@ -12,6 +12,7 @@ create table filters(
 
 create table prices(
     id integer primary key,
+    parse_date datetime,
     drug_id integer,
     drug_name varchar(255),
     store_name varchar(255),
@@ -42,6 +43,7 @@ create table user_agents(
 
 create table drugs_info(
     id integer primary key AUTOINCREMENT,
+    parse_date datetime,
     drugId integer,
     drugName varchar(255)
 );

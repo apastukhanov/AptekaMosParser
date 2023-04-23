@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from functools import partial
 import itertools
 
@@ -26,7 +27,6 @@ from exceptions import EmptyPage
 
 from progressbar import ProgressBar
 
-
 logging.basicConfig(level=logging.INFO)
 
 
@@ -38,17 +38,27 @@ def make_producers_page_url(raw_url: str) -> str:
     return URL.replace('tovary', '') + 'goods/med-' + raw_url.split('/')[-2] + '/firms'
 
 
-def download_drugs_info(model: Model):
+def update_drugs_info_from_site(model: Model):
     url = "https://api.aptekamos.ru/Egk/WEgk/getDrugs"
     r = requests.get(url, headers=HEADERS)
     drugs = r.json()['drugs']
-    columns = ['drugId', 'drugName']
-    records = [(record['drugId'], record['drugName'])
+    columns = ['drugId', 'drugName', 'parse_date']
+    drugs_timestamp = datetime.now()
+    records = [(record['drugId'], record['drugName'], drugs_timestamp)
                for record in drugs]
     model.clear_table('drugs_info')
     model.insert('drugs_info', columns, records)
     logging.info('table drugs_info is updated')
-    return int(len(drugs)/100) + 1
+    return int(len(drugs) / 100) + 1
+
+
+def download_drugs_info(model: Model):
+    drugs = model.fetchall('drugs_info', ['drugId', 'parse_date'])
+    dt = datetime.strptime(drugs[0]['parse_date'],
+                           '%Y-%m-%d %H:%M:%S.%f').date()
+    if len(drugs) > 0 and dt == datetime.now().date():
+        return int(len(drugs) / 100) + 1
+    return update_drugs_info_from_site(model)
 
 
 class Parser(ABC):
@@ -66,13 +76,13 @@ class Parser(ABC):
 
     def collect_all_prices(self, model: Model):
         output = []
-        model.clear_table('prices')
+        # model.clear_table('prices')
         list_data = model.fetchall('urls', ['id', 'url', 'name'])
         pbar = ProgressBar(total=len(list_data), name='цен')
         for data in list_data:
             prices = self.get_prices(data)
             output.append(prices)
-            model.insert('prices', ['drug_id', 'drug_name',
+            model.insert('prices', ['drug_id', 'parse_date', 'drug_name',
                                     'store_name', 'producers', 'price'], prices)
             pbar.update()
         pbar.close()
@@ -111,7 +121,7 @@ class BasicParser(Parser):
     def parse_producers(self, html: str, data: Dict):
         soup = BeautifulSoup(html, 'lxml')
         producers = ', '.join([x.getText() for x in
-                              soup.find_all(class_='tree-filter-label function')])
+                               soup.find_all(class_='tree-filter-label function')])
         return producers
 
     def parse_drugs_prices(self, html: str, data: Dict):
@@ -120,10 +130,12 @@ class BasicParser(Parser):
         prices = [float(el.text.split('р')[0].replace('\xa0', ''))
                   for el in soup.find_all(class_='ama-org-minp')]
         ids = [data['id'] for _ in range(len(stores))]
+        prices_timestamp = datetime.now()
+        dates = [prices_timestamp for _ in range(len(stores))]
         names = [data['name'] for _ in range(len(stores))]
         prod = self.get_producers(data)
         producers = [prod for _ in range(len(stores))]
-        return list(zip(ids, names, stores, producers, prices))
+        return list(zip(ids, dates, names, stores, producers, prices))
 
     def _helper_url_collector(self, page: int):
         html = self.get_page_source(URL, params={'page': page})
@@ -181,7 +193,7 @@ class MultiStreamsParser(BasicParser):
         with Pool(self.streams_count) as p:
             try:
                 for result in p.imap(self._helper_url_collector,
-                                    range(START_PAGE, page_count)):
+                                     range(START_PAGE, page_count)):
                     output.append(result)
                     pbar.update()
             except EmptyPage as e:
@@ -198,7 +210,8 @@ class MultiStreamsParser(BasicParser):
         with Pool(self.streams_count) as p:
             result = p.map(self.get_prices, list_data)
         data = list(itertools.chain.from_iterable(result))
-        model.insert('prices', ['drug_id', 'drug_name', 'store_name', 'producers', 'price'], data)
+        model.insert('prices', ['drug_id', 'parse_date', 'drug_name',
+                                'store_name', 'producers', 'price'], data)
         return data
 
 
@@ -225,7 +238,7 @@ class WebBrowserParser(Parser):
     def collect_all_urls(self, pages_count: int, model: Model):
         model.clear_table('urls')
         output = []
-        pbar=ProgressBar(total=pages_count, name='страниц')
+        pbar = ProgressBar(total=pages_count, name='страниц')
         for page in range(START_PAGE, pages_count):
             logging.info(f'downloading page: {page}')
             self.driver.get(URL + f'?page={page}')
@@ -245,9 +258,11 @@ class WebBrowserParser(Parser):
                   for el in self.driver
                   .find_elements(by=By.CLASS_NAME, value='org-name')]
         prices = [el.get_property('innerText')
-                    for el in self.driver.find_elements(by=By.CLASS_NAME,
-                                                        value='org-price-c')]
+                  for el in self.driver.find_elements(by=By.CLASS_NAME,
+                                                      value='org-price-c')]
         ids = [data['id'] for _ in range(len(stores))]
+        prices_timestamp = datetime.now()
+        dates = [prices_timestamp for _ in range(len(stores))]
         names = [data['name'] for _ in range(len(stores))]
         url_producers = make_producers_page_url(data['url'])
         self.driver.get(url_producers)
@@ -255,4 +270,4 @@ class WebBrowserParser(Parser):
                           self.driver.find_elements(by=By.CLASS_NAME,
                                                     value='tree-filter-checkbox-c')])
         producers = [prod for _ in range(len(stores))]
-        return list(zip(ids, names, stores, producers, prices))
+        return list(zip(ids, dates, names, stores, producers, prices))
