@@ -84,7 +84,7 @@ class Presenter:
         if self.view.is_url_parsed.get():
             self.view.update_status('Скачивание urls...')
             page_count = download_drugs_info(self.model)
-            page_count = 2
+            page_count = 5
             parser.collect_all_urls(page_count, self.model)
             self.view.update_status('Скачивание urls завершено!')
         self.view.update_status('Скачивание цен началось...')
@@ -92,6 +92,7 @@ class Presenter:
         self.view.update_status('Скачивание цен завершено!')
         df = create_output_excel(self.model)
         dir_path = self.view.main_menu_path_label.cget('text')
+        self.view.update_status(f'Записать данных в Excel файл начата...')
         save_excel(df=df, dir_path=dir_path)
         self.view.update_status(f'Excel c ценами сохранен '
                                 f'в папку: {dir_path}')
