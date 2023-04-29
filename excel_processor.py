@@ -48,6 +48,7 @@ def create_output_excel(model: Model):
 
 
 def save_excel(df: pd.DataFrame, dir_path: str):
-    path = Path(dir_path) / f'prices_{datetime.now().date()}.xlsx'
+    ts = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+    path = Path(dir_path) / f'prices_{ts}.xlsx'
     with pd.ExcelWriter(path, engine='openpyxl') as w:
         df.to_excel(w, index=False, sheet_name='prices')

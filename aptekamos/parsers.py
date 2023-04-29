@@ -54,10 +54,11 @@ def update_drugs_info_from_site(model: Model):
 
 def download_drugs_info(model: Model):
     drugs = model.fetchall('drugs_info', ['drugId', 'parse_date'])
-    dt = datetime.strptime(drugs[0]['parse_date'],
-                           '%Y-%m-%d %H:%M:%S.%f').date()
-    if len(drugs) > 0 and dt == datetime.now().date():
-        return int(len(drugs) / 100) + 1
+    if drugs:
+        dt = datetime.strptime(drugs[0]['parse_date'],
+                               '%Y-%m-%d %H:%M:%S.%f').date()
+        if len(drugs) > 0 and dt == datetime.now().date():
+            return int(len(drugs) / 100) + 1
     return update_drugs_info_from_site(model)
 
 
