@@ -136,7 +136,7 @@ class BasicParser(Parser):
         names = [data['name'] for _ in range(len(stores))]
         prod = self.get_producers(data)
         producers = [prod for _ in range(len(stores))]
-        return list(zip(ids, dates, names, stores, producers, prices))
+        return list(itertools.zip_longest(ids, dates, names, stores, producers, prices))
 
     def _helper_url_collector(self, page: int):
         html = self.get_page_source(URL, params={'page': page})
@@ -207,7 +207,7 @@ class MultiStreamsParser(BasicParser):
 
     def collect_all_prices(self, model: Model):
         list_data = model.fetchall('urls', ['url', 'id', 'name'])
-        model.clear_table('prices')
+        # model.clear_table('prices')
         with Pool(self.streams_count) as p:
             result = p.map(self.get_prices, list_data)
         data = list(itertools.chain.from_iterable(result))
@@ -271,4 +271,4 @@ class WebBrowserParser(Parser):
                           self.driver.find_elements(by=By.CLASS_NAME,
                                                     value='tree-filter-checkbox-c')])
         producers = [prod for _ in range(len(stores))]
-        return list(zip(ids, dates, names, stores, producers, prices))
+        return list(itertools.zip_longest(ids, dates, names, stores, producers, prices))
