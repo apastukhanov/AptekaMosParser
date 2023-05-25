@@ -17,5 +17,6 @@ TITLE = 'AptekaMos Parser'
 TAB_NAMES = ['Параметры отчета', 'Фильтры', 'Параметры загрузки']
 DEFAULT_PATH = Path.home() / 'Downloads'
 OPTIONS_STREAMS = [1, 3, 5, 7, 10, 15]
+# OPTIONS_STREAMS = [1, 4, 8, 10, 14, 20]
 OPTIONS_PROTOCOL = ['HTTP', 'HTTPS', 'SOCKS']
 

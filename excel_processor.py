@@ -27,7 +27,7 @@ def find(drug: str, info: List):
 
 def create_output_excel(model: Model):
     prices = pd.DataFrame(model.fetchall('prices',
-                                         ['drug_id', 'parse_date', 'drug_name',
+                                         ['drug_id', 'parse_date', 'drug_name', 'drug_group',
                                           'store_name', 'producers', 'price']))
     if prices.empty:
         return pd.DataFrame()
@@ -44,7 +44,8 @@ def create_output_excel(model: Model):
         drug_ids = p.map(fn, drug_name)
 
     prices['drug_id_egk'] = drug_ids
-    return prices[['drug_id_egk', 'drug_name', 'store_name', 'producers', 'price']].copy()
+    return prices[['drug_id_egk', 'drug_name', 'drug_group', 
+                   'store_name', 'producers', 'price']].copy()
 
 
 def save_excel(df: pd.DataFrame, dir_path: str):

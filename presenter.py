@@ -81,10 +81,13 @@ class Presenter:
 
     def click_get_prices(self):
         parser = self.get_parser()
+        ua = [d['user_agent'] for d in 
+              self.model.fetchall('user_agents', ['user_agent'])]
+        parser.set_user_agents(ua)
         if self.view.is_url_parsed.get():
             self.view.update_status('Скачивание urls...')
             page_count = download_drugs_info(self.model)
-            page_count = 5
+            page_count = 3
             parser.collect_all_urls(page_count, self.model)
             self.view.update_status('Скачивание urls завершено!')
         self.view.update_status('Скачивание цен началось...')

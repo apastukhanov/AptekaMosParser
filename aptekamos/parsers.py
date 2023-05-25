@@ -7,6 +7,7 @@ import logging
 
 import random
 from random import choice
+import re
 
 from multiprocessing import Pool
 
@@ -27,12 +28,16 @@ from exceptions import EmptyPage
 
 from progressbar import ProgressBar
 
+
 logging.basicConfig(level=logging.INFO)
 
 
 def make_prices_page_url(raw_url: str) -> str:
     return URL + raw_url.replace('/instrukciya', '').replace('?m=1', '') + '/ceni'
 
+def save_html(html: str, path_name: str):
+    with open(f'html/{path_name}.html', 'w') as f:
+        f.write(html)
 
 def make_producers_page_url(raw_url: str) -> str:
     return URL.replace('tovary', '') + 'goods/med-' + raw_url.split('/')[-2] + '/firms'
@@ -75,6 +80,9 @@ class Parser(ABC):
     def collect_all_urls(self):
         ...
 
+    def set_user_agents(self, user_agents: List[str]) -> None:
+        self.user_agents = user_agents
+
     def collect_all_prices(self, model: Model):
         output = []
         # model.clear_table('prices')
@@ -83,7 +91,7 @@ class Parser(ABC):
         for data in list_data:
             prices = self.get_prices(data)
             output.append(prices)
-            model.insert('prices', ['drug_id', 'parse_date', 'drug_name',
+            model.insert('prices', ['drug_id', 'parse_date', 'drug_name', 'drug_group',
                                     'store_name', 'producers', 'price'], prices)
             pbar.update()
         pbar.close()
@@ -100,22 +108,26 @@ class BasicParser(Parser):
 
     def get_urls_from_page(self, html: str, is_first: bool):
         soup = BeautifulSoup(html, 'lxml')
-        if is_first:
-            elements = soup.find_all(class_='ama-found-product')
-            return [(el.get('href').replace(URL, ''),
-                     el.find(class_='ama-found-product-name').text)
-                    for el in elements]
+        # if is_first:
+        #     elements = soup.find_all(class_='ama-found-product')
+        #     return [(el.get('href').replace(URL, ''),
+        #              el.find(class_='ama-found-product-name').text)
+        #             for el in elements]
         return [(el.get('href').replace(URL, ''),
                  el.text)
                 for el in soup.find_all(class_='product-name')]
 
-    def get_prices(self, data: Dict):
+    def get_prices(self, data: Dict, is_freezed: bool = False):
         url_price = make_prices_page_url(data['url'])
+        if is_freezed:
+            sleep(random.uniform(0.1, 1.2))
         html = self.get_page_source(url_price)
+        save_html(html, url_price.split('/')[-1])
         return self.parse_drugs_prices(html, data)
 
     def get_producers(self, data: Dict):
         url_price = make_producers_page_url(data['url'])
+        sleep(random.uniform(0, 1.2))
         html = self.get_page_source(url_price)
         return self.parse_producers(html, data)
 
@@ -124,19 +136,34 @@ class BasicParser(Parser):
         producers = ', '.join([x.getText() for x in
                                soup.find_all(class_='tree-filter-label function')])
         return producers
+    
+    def parse_price_from_str(self, input_str: str) -> float:
+        pattern = r'(\d{1,3}(?:\xa0\d{3})*)(?:\.\d{2})?'
+        input_str = input_str.strip()
+        match = re.search(pattern, input_str)
+        if match:
+            # Remove non-breaking space character and replace it with a regular space
+            price = float(match.group(1).replace('\xa0', ''))
+            return price
+        return input_str
 
     def parse_drugs_prices(self, html: str, data: Dict):
         soup = BeautifulSoup(html, 'lxml')
-        stores = [el.text for el in soup.find_all(class_='ama-org-name')]
-        prices = [float(el.text.split('р')[0].replace('\xa0', ''))
-                  for el in soup.find_all(class_='ama-org-minp')]
+        stores = [el.text.strip() for el in soup.find_all(class_='org-name')]
+        prices = [self.parse_price_from_str(el.text)
+                  for el in soup.find_all(class_='org-price-c')]
+        # prices = [float(el.text.split('р')[0].replace('\xa0', ''))
+        #           for el in soup.find_all(class_='org-price-c')]
+        group = soup.find_all(class_='product-phg-n')[0].text 
+        groups = [group for _ in range(len(stores))]
         ids = [data['id'] for _ in range(len(stores))]
         prices_timestamp = datetime.now()
         dates = [prices_timestamp for _ in range(len(stores))]
         names = [data['name'] for _ in range(len(stores))]
         prod = self.get_producers(data)
         producers = [prod for _ in range(len(stores))]
-        return list(itertools.zip_longest(ids, dates, names, stores, producers, prices))
+        return list(itertools.zip_longest(ids, dates, names, groups, 
+                                          stores, producers, prices))
 
     def _helper_url_collector(self, page: int):
         html = self.get_page_source(URL, params={'page': page})
@@ -160,8 +187,8 @@ class BasicParser(Parser):
                 break
             model.insert('urls', ['url', 'name'], data)
             output.append(data)
-            page += 1
             logging.info(f'{page} is parsed..')
+            page += 1
             pbar.update()
         pbar.close()
         return list(itertools.chain.from_iterable(output))
@@ -187,16 +214,23 @@ class MultiStreamsParser(BasicParser):
         super().__init__(user_agents, proxies)
         self.streams_count = streams_count
 
+    def test_fn(self, arg):
+        sleep(0.2)
+        return (1, 1, 1, 1, 1, 1)
+
     def collect_all_urls(self, page_count: int, model: Model):
         model.clear_table('urls')
         output = []
         pbar = ProgressBar(total=page_count, name='страниц')
         with Pool(self.streams_count) as p:
             try:
+                i = 0
                 for result in p.imap(self._helper_url_collector,
                                      range(START_PAGE, page_count)):
                     output.append(result)
                     pbar.update()
+                    logging.info(f'{START_PAGE + i} is parsed..')
+                    i+=1
             except EmptyPage as e:
                 logging.error(f'URLs are not found on the page\n'
                               f'Error: {str(e)}')
@@ -208,10 +242,22 @@ class MultiStreamsParser(BasicParser):
     def collect_all_prices(self, model: Model):
         list_data = model.fetchall('urls', ['url', 'id', 'name'])
         # model.clear_table('prices')
+        output=[]
+        pbar = ProgressBar(total=len(list_data), name='страниц')
         with Pool(self.streams_count) as p:
-            result = p.map(self.get_prices, list_data)
+            fn = partial(self.get_prices, is_freezed=True)
+            try:
+                for result in p.imap(fn, list_data):
+                    output.append(result)
+                    pbar.update()
+            except Exception as e:
+                print('error')
+                logging.error(str(e))
+            # result = p.map(fn, list_data)
+        pbar.close()
+        result = output
         data = list(itertools.chain.from_iterable(result))
-        model.insert('prices', ['drug_id', 'parse_date', 'drug_name',
+        model.insert('prices', ['drug_id', 'parse_date', 'drug_name', 'drug_group',
                                 'store_name', 'producers', 'price'], data)
         return data
 
@@ -261,6 +307,9 @@ class WebBrowserParser(Parser):
         prices = [el.get_property('innerText')
                   for el in self.driver.find_elements(by=By.CLASS_NAME,
                                                       value='org-price-c')]
+        group = self.driver.find_elements(by=By.CLASS_NAME, 
+                                          value='product-phg-n')[0].get_property('innerText')
+        groups = [group for _ in range(len(stores))]
         ids = [data['id'] for _ in range(len(stores))]
         prices_timestamp = datetime.now()
         dates = [prices_timestamp for _ in range(len(stores))]
@@ -271,4 +320,4 @@ class WebBrowserParser(Parser):
                           self.driver.find_elements(by=By.CLASS_NAME,
                                                     value='tree-filter-checkbox-c')])
         producers = [prod for _ in range(len(stores))]
-        return list(itertools.zip_longest(ids, dates, names, stores, producers, prices))
+        return list(itertools.zip_longest(ids, dates, names, groups, stores, producers, prices))
